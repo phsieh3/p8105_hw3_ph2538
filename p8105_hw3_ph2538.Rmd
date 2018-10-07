@@ -1,0 +1,49 @@
+---
+title: "p8105_hw3_ph2538"
+author: "Pei Yang Hsieh"
+date: 2018-10-7
+output: github_document
+---
+
+The purpose of this file is to complete homework 2.
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(devtools)
+library(p8105.datasets)
+library(stringr)
+
+```
+
+## Problem 1
+
+### Loading and cleaning brfss data 
+
+```{r load_1}
+#First, do some data cleaning:
+#format the data to use appropriate variable names;
+#focus on the “Overall Health” topic
+#include only responses from “Excellent” to “Poor”
+#organize responses as a factor taking levels from “Excellent” to “Poor”
+
+#load brfss data
+data(brfss_smart2010)
+
+# #clean data
+# clean_brfss = 
+# brfss_smart2010 %>%
+# janitor::clean_names() %>%
+# filter(topic == "Overall Health") %>%
+# filter(response == "Excellent" | response == "Very good" | response == "Good" | response == "Fair" | response == "Poor")
+# 
+#   
+# brfss_smart2010$response_factor = factor(brfss_smart2010$response, levels = str_c(c("Excellent", "Very good", "Good", "Fair", "Poor"))) 
+# 
+# clean_brfss
+
+
+```
+
+
