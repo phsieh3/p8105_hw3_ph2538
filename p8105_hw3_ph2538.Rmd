@@ -7,15 +7,13 @@ output: github_document
 
 The purpose of this file is to complete homework 3.
 
-```{r setup, include = FALSE}
+```{r}
 library(tidyverse)
 library(ggplot2)
-library(readxl)
 library(devtools)
 library(p8105.datasets)
-library(stringr)
-
 ```
+
 
 ## Problem 1
 
@@ -35,6 +33,7 @@ clean_brfss =
   janitor::clean_names() %>%
   filter(topic == "Overall Health") %>%
   filter(response == "Excellent" | response == "Very good" | response == "Good" | response == "Fair" | response == "Poor") %>%
+  select(year, locationdesc, response, data_value) %>%
   mutate(as.factor(response)) %>%
   separate(locationdesc, into = c("state", "county"), sep = " - ")
 
@@ -60,6 +59,8 @@ brfss_2002 = filter(clean_brfss, year == '2002') %>%
   distinct(state, county) %>%
   count(state) %>%
   filter(n == 7)
+
+brfss_2002
 ```
 
 1. Connecticut, Florida, and North Carolina are observed at 7 locations.
@@ -77,21 +78,32 @@ brfss_plot = clean_brfss %>%
   ggplot(brfss_plot, aes(x = year, y = count, color = state)) +
   geom_point() + geom_line()
 ```
-```{r}
+```{r excellent_table}
 #Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State.
 
 brfss_excellent = clean_brfss %>%
   filter(year == '2002' | year == '2006' | year == '2010') %>%
   filter(state == 'NY') %>%
-  select(year, state, response, data_value)
-
-mean(brfss_excellent$response == "Excellent", na.rm = TRUE)
-
-sd(brfss_excellent$response == "Excellent", na.rm = TRUE)
-  
+  select(year, state, county, response, data_value) %>%
+  spread(key = response, value = data_value) %>%
+  select(year, state, county, Excellent) %>%
+  group_by(county, year) %>%
+  summarize(sd_Excellent = sd(Excellent), mean_Excellent = mean(Excellent)) %>%
+  spread(key = county, value = mean_Excellent) %>%
+  knitr::kable(digits = 1)
 
 ```
 
+```{r}
+#For each year and state, compute the average proportion in each response category (taking the average across locations in a state). Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
+
+five_panel_plot = clean_brfss %>%
+  group_by(year, county, state) %>%
+  spread(key = response, value = data_value) %>%
+  summarize(mean_Excellent = mean(Excellent!='NA'), mean_vgood = mean('Very good'!='NA'))
+  
+
+```
 
 ## Problem 2
 
