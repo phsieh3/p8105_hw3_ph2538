@@ -133,7 +133,8 @@ five_panel_plot = clean_brfss %>%
   summarize(mean_excellent = mean(Excellent), mean_vgood = mean(`Very good`), mean_good = mean(Good), mean_fair = mean(Fair), mean_poor = mean(Poor)) %>%
 gather(key = response, value = proportion, mean_excellent:mean_poor) 
   
-ggplot(five_panel_plot, aes(x = year, y = proportion, color = state)) + geom_line() + facet_grid(. ~ response)
+ggplot(five_panel_plot, aes(x = year, y = proportion, color = state)) + geom_point() + facet_grid(. ~ response)
+#NEED TO ORDER THESE 
    
 ```
 
@@ -194,10 +195,8 @@ ggplot(aisle_max, aes(x = aisle_id, y = n)) +
     x = "Aisle ID",
     y = "Number of Items"
   ) 
-  
-  plot_fair = ggplot(five_panel_plot, aes(x = year, y = mean_fair, color = state)) + 
-  geom_line() +
-  theme(legend.position = "none")
+
+#reorder this plot with highest number of items first, to lowest 
 
 ```
 
@@ -206,8 +205,20 @@ ggplot(aisle_max, aes(x = aisle_id, y = n)) +
 
 popular_item = 
   instacart %>% 
-  filter(aisle == "baking ingredients" | aisle == "dog food care" | aisle == "packaged vegetable fruits") %>% 
-  group_by(aisle)
+  filter(aisle == "baking ingredients" | aisle == "dog food care" | aisle == "packaged vegetables fruits") %>% 
+  select(aisle, product_name) %>% 
+  group_by(aisle, product_name) %>% 
+  summarize(n = n()) %>% 
+  arrange(desc(n))
+  
+popular_item_sort = 
+  popular_item %>%
+  group_by(aisle) %>% 
+  top_n(5) %>% 
+  spread(key = aisle, value = product_name)
+
+#min_rank(n)
+#separate 
   
 ```
 
@@ -215,6 +226,14 @@ popular_item =
 ```{r}
 #Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
+apple_icecream = 
+  instacart %>% 
+  filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>% 
+  group_by(product_name, order_dow) %>% 
+  summarize(mean_hour = mean(order_hour_of_day)) %>% 
+  spread(key = product_name, value = mean_hour) %>% 
+  mutate(order_dow = recode(order_dow, `0` = "Sunday", `1` = "Monday", `2` = "Tuesday", `3` = "Wednesday", `4` = "Thursday", `5` = "Friday", `6` = "Saturday"))
+  
 
 ```
 
