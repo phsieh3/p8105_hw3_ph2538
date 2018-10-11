@@ -102,38 +102,16 @@ brfss_excellent
 ```{r five_panel}
 #For each year and state, compute the average proportion in each response category (taking the average across locations in a state). Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
 
-# five_panel_plot = clean_brfss %>%
-#   group_by(year, state) %>%
-#   summarize(mean_excellent = mean(Excellent), mean_vgood = mean(`Very good`), mean_good = mean(Good), mean_fair = mean(Fair), mean_poor = mean(Poor))
-# 
-# plot_exc = ggplot(five_panel_plot, aes(x = year, y = mean_excellent, color = state)) + 
-#   geom_line() +
-#   theme(legend.position = "none")
-# 
-# plot_vgood = ggplot(five_panel_plot, aes(x = year, y = mean_vgood, color = state)) + 
-#   geom_line() +
-#   theme(legend.position = "none")
-# 
-# plot_good = ggplot(five_panel_plot, aes(x = year, y = mean_good, color = state)) + 
-#   geom_line() +
-#   theme(legend.position = "none")
-# 
-# plot_fair = ggplot(five_panel_plot, aes(x = year, y = mean_fair, color = state)) + 
-#   geom_line() +
-#   theme(legend.position = "none")
-# 
-# plot_poor = ggplot(five_panel_plot, aes(x = year, y = mean_poor, color = state)) + 
-#   geom_line()
-# 
-# (plot_exc + plot_vgood + plot_good) / (plot_fair + plot_poor)
-# 
-
 five_panel_plot = clean_brfss %>%
+  mutate(year = as.factor(year)) %>% 
   group_by(year, state) %>%
   summarize(mean_excellent = mean(Excellent), mean_vgood = mean(`Very good`), mean_good = mean(Good), mean_fair = mean(Fair), mean_poor = mean(Poor)) %>%
 gather(key = response, value = proportion, mean_excellent:mean_poor) 
   
-ggplot(five_panel_plot, aes(x = year, y = proportion, color = state)) + geom_point() + facet_grid(. ~ response)
+ggplot(five_panel_plot, aes(x = year, y = proportion)) + 
+  geom_boxplot() + 
+  facet_grid(. ~ response) +
+  theme(axis.text.x = element_text(angle = 90))
 #NEED TO ORDER THESE 
    
 ```
@@ -167,7 +145,7 @@ The dimensions of the instacart dataset is`r dim(instacart)`, which means that i
 
 length(unique(instacart$aisle_id))
 
-#there are 134 unique aisles
+#there are 134 unique aisles, including an aisle called "missing"
 
 aisle_max = 
   instacart %>%
@@ -196,7 +174,7 @@ ggplot(aisle_max, aes(x = aisle_id, y = n)) +
     y = "Number of Items"
   ) 
 
-#reorder this plot with highest number of items first, to lowest 
+#reorder this plot with highest number of items first, to lowest. try to make bar plot 
 
 ```
 
@@ -217,6 +195,7 @@ popular_item_sort =
   top_n(5) %>% 
   spread(key = aisle, value = product_name)
 
+popular_item_sort
 #min_rank(n)
 #separate 
   
@@ -232,21 +211,104 @@ apple_icecream =
   group_by(product_name, order_dow) %>% 
   summarize(mean_hour = mean(order_hour_of_day)) %>% 
   spread(key = product_name, value = mean_hour) %>% 
-  mutate(order_dow = recode(order_dow, `0` = "Sunday", `1` = "Monday", `2` = "Tuesday", `3` = "Wednesday", `4` = "Thursday", `5` = "Friday", `6` = "Saturday"))
+  mutate(order_dow = recode(order_dow, `0` = "Sunday", `1` = "Monday", `2` = "Tuesday", `3` = "Wednesday", `4` = "Thursday", `5` = "Friday", `6` = "Saturday")) %>%
+   knitr::kable(digits = 1)
   
-
+apple_icecream
 ```
 
 
 ## Problem 3
 
 ```{r load_3}
-
 #load ny_noaa data
+#Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. 
+
 data(ny_noaa)
 
+clean_noaa = 
+  ny_noaa %>% 
+  janitor::clean_names() %>%
+  separate(date, into = c("year", "month", "day"), sep = "-") 
+
+#do we want to take the average across all years of a location or across all locations for 1 year?
 
 
+```
+### Questions for Problem 3
 
+1. For snowfall, what are the most commonly observed values? Why?
+2. Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
+3. Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+
+```{r}
+#For snowfall, what are the most commonly observed values? Why?
+
+clean_noaa %>% 
+  group_by(snow) %>% 
+  summarize(n = n()) %>% 
+  top_n(5)
+
+#0 is the most commonly observed value. This means that for the majority of the year, most days have no snowfall.
+```
+```{r}
+#Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
+
+plot_max_temp = 
+  clean_noaa %>% 
+  filter(month == "01" | month == "07") %>%
+  na.omit() %>% 
+  mutate(tmax = as.numeric(tmax)) %>% 
+  group_by(year, month, id) %>% 
+  summarize(mean_tmax = mean(tmax)) %>% 
+  ggplot(aes(x = year, y = mean_tmax)) + 
+  geom_boxplot() + facet_grid(. ~ month) +
+  labs(
+    title = "Average Max Temp in January and July",
+    x = "Year",
+    y = "Average Max Temperature"
+  ) +
+  theme(axis.text.x = element_text(angle = 90))
+
+plot_max_temp 
+
+```
+```{r}
+#Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+
+tmax_tmin_plot = 
+  clean_noaa %>% 
+  na.omit() %>% 
+  mutate(tmax = as.numeric(tmax)) %>% 
+  mutate(tmin = as.numeric(tmin)) %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_hex() +
+  labs(
+    title = "Minimum Temperature vs Max temperature",
+    x = "Minimum Temperature",
+    y = "Max Temperature"
+  ) +
+  theme(axis.text.x = element_text(angle = 90))
+  
+  tmax_tmin_plot
+  
+snowfall_distribution = 
+  clean_noaa %>% 
+  na.omit() %>% 
+  filter(snow > 0 & snow < 100) %>%
+  ggplot(aes(x = year, y = snow)) + 
+  geom_boxplot() +
+  labs(
+    title = "Distribution of snowfall",
+    x = "Year",
+    y = "Snow"
+  ) +
+  theme(axis.text.x = element_text(angle = 90))
+  
+snowfall_distribution
+
+tmax_tmin_plot + snowfall_distribution
+
+  
 ```
 
