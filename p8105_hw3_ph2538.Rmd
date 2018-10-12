@@ -106,13 +106,13 @@ five_panel_plot = clean_brfss %>%
   mutate(year = as.factor(year)) %>% 
   group_by(year, state) %>%
   summarize(mean_excellent = mean(Excellent), mean_vgood = mean(`Very good`), mean_good = mean(Good), mean_fair = mean(Fair), mean_poor = mean(Poor)) %>%
-gather(key = response, value = proportion, mean_excellent:mean_poor) 
+  gather(key = response, value = proportion, mean_excellent:mean_poor) %>% 
+  mutate(response_f = factor(response, levels = c('mean_excellent', 'mean_vgood', 'mean_good', 'mean_fair', 'mean_poor')))
   
 ggplot(five_panel_plot, aes(x = year, y = proportion)) + 
   geom_boxplot() + 
-  facet_grid(. ~ response) +
+  facet_grid(. ~ response_f) +
   theme(axis.text.x = element_text(angle = 90))
-#NEED TO ORDER THESE 
    
 ```
 
@@ -145,6 +145,8 @@ The dimensions of the instacart dataset is`r dim(instacart)`, which means that i
 
 length(unique(instacart$aisle_id))
 
+length(unique(instacart$aisle))
+
 #there are 134 unique aisles, including an aisle called "missing"
 
 aisle_max = 
@@ -152,8 +154,15 @@ aisle_max =
   group_by(aisle_id) %>%
   summarize(n = n()) 
 
+name_aisle_max = 
+  instacart %>%
+  group_by(aisle) %>%
+  summarize(n = n()) 
+
 #sort by items sold
 arrange(aisle_max, desc(n))
+
+arrange(name_aisle_max, desc(n))
 
 #Aisle 83 (fresh vegetables) has most items ordered from it, followed by aisle 24 (fresh fruits).
 
@@ -165,16 +174,31 @@ arrange(aisle_max, desc(n))
 
 ```{r plot_aisle_number_items}
 #Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it.
-
-ggplot(aisle_max, aes(x = aisle_id, y = n)) + 
-  geom_point() +
+ 
+aisle_max %>% 
+  mutate(aisle_id = as.factor(aisle_id)) %>% 
+  mutate(aisle_id = forcats::fct_reorder(aisle_id, n)) %>% 
+  ggplot(aes(x = aisle_id, y = n)) +
+  geom_bar(stat = "identity") +
   labs(
     title = "Number of Items per Aisle",
     x = "Aisle ID",
     y = "Number of Items"
-  ) 
+  ) +
+  theme(axis.text.x = element_text(angle = 90), text = element_text(size = 5))
 
-#reorder this plot with highest number of items first, to lowest. try to make bar plot 
+
+name_aisle_max %>% 
+  mutate(aisle = as.factor(aisle)) %>% 
+  mutate(aisle = forcats::fct_reorder(aisle, n)) %>% 
+  ggplot(aes(x = aisle, y = n)) + 
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Number of Items per Aisle",
+    x = "Aisle Name",
+    y = "Number of Items"
+  ) +
+  theme(axis.text.x = element_text(angle = 90), text = element_text(size = 5))
 
 ```
 
@@ -193,12 +217,11 @@ popular_item_sort =
   popular_item %>%
   group_by(aisle) %>% 
   top_n(5) %>% 
-  spread(key = aisle, value = product_name)
+  spread(key = aisle, value = product_name) %>% 
+  knitr::kable(digits = 1)
 
 popular_item_sort
-#min_rank(n)
-#separate 
-  
+
 ```
 
 
@@ -229,9 +252,12 @@ data(ny_noaa)
 clean_noaa = 
   ny_noaa %>% 
   janitor::clean_names() %>%
-  separate(date, into = c("year", "month", "day"), sep = "-") 
-
-#do we want to take the average across all years of a location or across all locations for 1 year?
+  separate(date, into = c("year", "month", "day"), sep = "-") %>% 
+  mutate(
+    prp = prcp/10,
+    tmax = as.numeric(tmax)/10,
+    tmin = as.numeric(tmin)/10
+  )
 
 
 ```
@@ -279,8 +305,6 @@ plot_max_temp
 tmax_tmin_plot = 
   clean_noaa %>% 
   na.omit() %>% 
-  mutate(tmax = as.numeric(tmax)) %>% 
-  mutate(tmin = as.numeric(tmin)) %>% 
   ggplot(aes(x = tmin, y = tmax)) + 
   geom_hex() +
   labs(
@@ -289,8 +313,6 @@ tmax_tmin_plot =
     y = "Max Temperature"
   ) +
   theme(axis.text.x = element_text(angle = 90))
-  
-  tmax_tmin_plot
   
 snowfall_distribution = 
   clean_noaa %>% 
@@ -304,8 +326,6 @@ snowfall_distribution =
     y = "Snow"
   ) +
   theme(axis.text.x = element_text(angle = 90))
-  
-snowfall_distribution
 
 tmax_tmin_plot + snowfall_distribution
 
