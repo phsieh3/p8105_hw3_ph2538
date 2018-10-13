@@ -1,13 +1,13 @@
 ---
 title: "p8105_hw3_ph2538"
 author: "Pei Yang Hsieh"
-date: 2018-10-7
+date: 2018-10-13
 output: github_document
 ---
 
 The purpose of this file is to complete homework 3.
 
-```{r}
+```{r setup, include = FALSE}
 library(tidyverse)
 library(ggplot2)
 library(devtools)
@@ -58,7 +58,8 @@ Using this dataset, do or answer the following (commenting on the results of eac
 ```{r state_7}
 #In 2002, which states were observed at 7 locations?
 
-brfss_2002 = filter(clean_brfss, year == '2002') %>%
+brfss_2002 = 
+  filter(clean_brfss, year == '2002') %>%
   distinct(state, county) %>%
   count(state) %>%
   filter(n == 7)
@@ -66,13 +67,14 @@ brfss_2002 = filter(clean_brfss, year == '2002') %>%
 brfss_2002
 ```
 
-1. Connecticut, Florida, and North Carolina are observed at 7 locations.
+1. In 2002, Connecticut, Florida, and North Carolina are observed at 7 locations.
 
 ```{r spaghetti_plot}
-#Make a “spaghetti plot” that shows the number of observations in each state from 2002 to 2010.
+#Make a “spaghetti plot” that shows the number of locations in each state from 2002 to 2010.
 
-#count number of observations in each state
-brfss_plot = clean_brfss %>%
+#count number of locations in each state
+brfss_plot = 
+  clean_brfss %>%
   distinct(year, state, county) %>% 
   select(year,  state, county) %>% 
   group_by(year, state) %>%
@@ -80,8 +82,18 @@ brfss_plot = clean_brfss %>%
 
 #create plot
   ggplot(brfss_plot, aes(x = year, y = count, color = state)) +
-  geom_point() + geom_line()
+  geom_point() + 
+  geom_line() +
+  labs(
+    title = "Number of Locations in Each State 2002-2010",
+    x = "Year",
+    y = "Number of Locations"
+  )
 ```
+
+
+2. This spaghetti plot shows the number of locations in each state from 2002 to 2010. Most of the states have under 10 locations The state with the highest count (over 40 locations) has 2 peaks, in 2007 and 2010.
+
 
 ```{r excellent_table}
 #Make a table showing, for the years 2002, 2006, and 2010, the mean and standard deviation of the proportion of “Excellent” responses across locations in NY State.
@@ -92,12 +104,13 @@ brfss_excellent = clean_brfss %>%
   filter(state == 'NY') %>%
   select(year, county, Excellent) %>%
   group_by(year) %>%
-  summarize(sd_excellent = sd(Excellent), mean_excellent = mean(Excellent)) # %>%
-  #spread(key = county, value = mean_excellent) %>%
-  #knitr::kable(digits = 1)
+  summarize(mean_excellent = mean(Excellent), sd_excellent = sd(Excellent))
 
 brfss_excellent
 ```
+
+
+3. In 2002, 2006, and 2010, the mean of the proportion of excellent is 24, 22.5, and 22.7 respectively.The standard deviation of the proportion is 4.49, 4, and 3.57 respectively. The means and standard deviations in all three years are similar to each other. 
 
 ```{r five_panel}
 #For each year and state, compute the average proportion in each response category (taking the average across locations in a state). Make a five-panel plot that shows, for each response category separately, the distribution of these state-level averages over time.
@@ -112,9 +125,14 @@ five_panel_plot = clean_brfss %>%
 ggplot(five_panel_plot, aes(x = year, y = proportion)) + 
   geom_boxplot() + 
   facet_grid(. ~ response_f) +
-  theme(axis.text.x = element_text(angle = 90))
+  theme(axis.text.x = element_text(angle = 90)) + 
+  labs(
+    title = "Average Proportion in Each Response Category"
+  )
    
 ```
+
+4. The plot shows that the distribution of state level averages over time in each response category remains relatively consistent over the years. Out of the response categories, very good has the highest average proportion, followed by good, excellent, fair, and then poor. 
 
 ## Problem 2
 
@@ -126,9 +144,7 @@ data(instacart)
 instacart
 ```
 
-The goal is to do some exploration of this dataset. To that end, write a short description of the dataset, noting the size and structure of the data, describing some key variables, and giving illstrative examples of observations.
-
-The dimensions of the instacart dataset is`r dim(instacart)`, which means that it has 1384617 observations and 15 variables. Some key variables include order ID, product ID, and user ID which are all integers. There is also the product name, aisle, department, and department ID, which give information on the products and where they are found. 
+The dimensions of the instacart dataset is`r dim(instacart)`, which means that it has 1384617 observations and 15 variables. Some key variables include order ID, product ID, and user ID which are all integers. There is also the product name, aisle, department, and department ID, which give information on the products and where they are found. Additionally, variables include time and day of the orders. For example, Bulgarian Yogurt was ordered from the yogurt aisle, which is aisle 120. The yogurt aisle is under the dairy eggs department, which is department 16. Also, it shows that the user ordered this Bulgarian Yogurt on Thursday at 10 o clock.  
 
 ### Questions for Problem 2
 
@@ -136,41 +152,35 @@ The dimensions of the instacart dataset is`r dim(instacart)`, which means that i
 
 2. Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it.
 
-3. Make a table showing the most popular item aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”
+3. Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”
 
 4. Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
-```{r aisle}
+```{r unique_aisle}
 #How many aisles are there, and which aisles are the most items ordered from?
 
 length(unique(instacart$aisle_id))
 
 length(unique(instacart$aisle))
+```
 
-#there are 134 unique aisles, including an aisle called "missing"
+1a. There are 134 unique aisles.
 
+```{r aisle_max}
 aisle_max = 
   instacart %>%
   group_by(aisle_id) %>%
-  summarize(n = n()) 
+  summarize(n = n()) %>% 
+  arrange(desc(n))
 
 name_aisle_max = 
   instacart %>%
   group_by(aisle) %>%
-  summarize(n = n()) 
-
-#sort by items sold
-arrange(aisle_max, desc(n))
-
-arrange(name_aisle_max, desc(n))
-
-#Aisle 83 (fresh vegetables) has most items ordered from it, followed by aisle 24 (fresh fruits).
-
+  summarize(n = n()) %>% 
+  arrange(desc(n))
 ```
 
-1. There are 134 unique aisles.
-
-2. Aisle 83 (fresh vegetables) has most items ordered from it, followed by aisle 24 (fresh fruits).
+1b. Aisle 83 (fresh vegetables) has most items ordered from it, followed by aisle 24 (fresh fruits).
 
 ```{r plot_aisle_number_items}
 #Make a plot that shows the number of items ordered in each aisle. Order aisles sensibly, and organize your plot so others can read it.
@@ -185,7 +195,7 @@ aisle_max %>%
     x = "Aisle ID",
     y = "Number of Items"
   ) +
-  theme(axis.text.x = element_text(angle = 90), text = element_text(size = 5))
+  scale_x_discrete(breaks = c(132, 42, 83))
 
 
 name_aisle_max %>% 
@@ -198,12 +208,14 @@ name_aisle_max %>%
     x = "Aisle Name",
     y = "Number of Items"
   ) +
-  theme(axis.text.x = element_text(angle = 90), text = element_text(size = 5))
+  scale_x_discrete(breaks = c("beauty", "fresh vegetables"))
 
 ```
 
+2. These two plots show number of items ordered in each aisle, from aisles with the least number of items (beauty, aisle 132) to those with the most (fresh vegetables, aisle 83). The first plot shows the aisle ID and the second plot shows the aisle names. Both the plots show that the range of number of items ordered in each aisle goes up to around 150,000 items. 
+
 ```{r popular_aisle}
-#Make a table showing the most popular item aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”
+#Make a table showing the most popular item in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”
 
 popular_item = 
   instacart %>% 
@@ -216,8 +228,7 @@ popular_item =
 popular_item_sort = 
   popular_item %>%
   group_by(aisle) %>% 
-  top_n(5) %>% 
-  spread(key = aisle, value = product_name) %>% 
+  top_n(1) %>% 
   knitr::kable(digits = 1)
 
 popular_item_sort
@@ -225,7 +236,9 @@ popular_item_sort
 ```
 
 
-```{r}
+3. This table shows that the most popular item from the "packaged vegetables fruits" aisle is the Organic Baby Spinach with 9784 orders. For "baking ingredients", the most popular item is Light Brown Sugar with 499 orders. For "dog food care", the most popular item is Snack Sticks Chicken & Rice Recipe Dog Treats with 30 orders. This shows that Organic Baby Spinach is ordered many more times than the other two most popular items in the other two aisles.
+
+```{r apple_icecream}
 #Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
 apple_icecream = 
@@ -240,6 +253,8 @@ apple_icecream =
 apple_icecream
 ```
 
+
+4. This table shows that the mean hour of the day for ordering coffee ice cream and pink lady apples is generally midday. The mean hours are comparable across weekdays for both items. For coffee ice cream, on average, people order at the latest time on Tuesday. For pink lady apples, on average. people order at the latest time on Wednesday.
 
 ## Problem 3
 
@@ -258,8 +273,6 @@ clean_noaa =
     tmax = as.numeric(tmax)/10,
     tmin = as.numeric(tmin)/10
   )
-
-
 ```
 ### Questions for Problem 3
 
@@ -267,17 +280,18 @@ clean_noaa =
 2. Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
 3. Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 
-```{r}
+```{r common_snowfall}
 #For snowfall, what are the most commonly observed values? Why?
 
 clean_noaa %>% 
   group_by(snow) %>% 
   summarize(n = n()) %>% 
   top_n(5)
-
-#0 is the most commonly observed value. This means that for the majority of the year, most days have no snowfall.
 ```
-```{r}
+
+1. 0 is the most commonly observed value. This suggests that for the majority of the year, most days have no snowfall.
+
+```{r plot_max_temp}
 #Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
 
 plot_max_temp = 
@@ -290,16 +304,19 @@ plot_max_temp =
   ggplot(aes(x = year, y = mean_tmax)) + 
   geom_boxplot() + facet_grid(. ~ month) +
   labs(
-    title = "Average Max Temp in January and July",
+    title = "Average Max Temp (°C) in January and July 1981-2010",
     x = "Year",
-    y = "Average Max Temperature"
+    y = "Average Max Temperature (°C)"
   ) +
-  theme(axis.text.x = element_text(angle = 90))
+  theme(axis.text.x = element_text(angle = 90), text = element_text(size = 8))
 
 plot_max_temp 
 
 ```
-```{r}
+
+2. This two-panel plot shows that the average max temperature in July is always higher than that of January (around 30°C compared to 0°C). Regarding structure, for January, there is slight variability in average max temp over the years. July's average max temp remains mostly consistent over the years. Also, there are a few outliers in every year for January, which fall both above and below the average max temperature. There are fewer outliers in July, and most of these outliers fall below the average max temperature.
+
+```{r tmax_tmin_plot}
 #Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 
 tmax_tmin_plot = 
@@ -312,7 +329,7 @@ tmax_tmin_plot =
     x = "Minimum Temperature",
     y = "Max Temperature"
   ) +
-  theme(axis.text.x = element_text(angle = 90))
+  theme(axis.text.x = element_text(angle = 90), text = element_text(size = 8))
   
 snowfall_distribution = 
   clean_noaa %>% 
@@ -325,10 +342,11 @@ snowfall_distribution =
     x = "Year",
     y = "Snow"
   ) +
-  theme(axis.text.x = element_text(angle = 90))
+  theme(axis.text.x = element_text(angle = 90), text = element_text(size = 8))
 
 tmax_tmin_plot + snowfall_distribution
 
   
 ```
 
+3. For minimum vs maximum temperature, a linear trend is visible, shown in the lighter blue counts. For distribution of snowfall, there are only a few outliers over the years, all of which are higher values. Snowfall distribution remains relatively consistent over the years, shown by how the means are very similar to each other.
